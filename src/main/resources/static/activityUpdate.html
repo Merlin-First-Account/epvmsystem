@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Title</title>
+    <link rel="stylesheet" href="../layui/css/layui.css">
+    <script src="../layui/layui.js" tppabs="../layui/css/layui.css" media="all"></script>
+
+</head>
+<body>
+<div style="margin-left: 15%;width: 70%;height: 95%;margin-top:3%">
+    <form class="layui-form layui-form-pane">
+        <div class="layui-form-item">
+            <label class="layui-form-label">活动ID</label>
+            <div class="layui-input-block">
+                <input type="text" id="aid" lay-verify="required" disabled="disabled" autocomplete="off"
+                       class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">活动名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="aname" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">开始时间</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" id="btime">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">结束时间</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" id="etime">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">招募人数</label>
+            <div class="layui-input-block">
+                <input type="text" id="vquantity" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">义工时</label>
+            <div class="layui-input-block">
+                <input type="text" id="atime" autocomplete="off" class="layui-input" disabled="disabled">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">积分</label>
+            <div class="layui-input-block">
+                <input type="text" id="apoint" autocomplete="off" class="layui-input" lay-verify="required">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">活动简介</label>
+            <div class="layui-input-block">
+                <textarea id="aintroduction" placeholder="请输入内容" class="layui-textarea"></textarea>
+            </div>
+        </div>
+
+    </form>
+    <div>
+        <button class="layui-btn" id="update" style="margin-left: 130px">确认修改</button>
+    </div>
+</div>
+</body>
+<script>
+    layui.use('laydate', function () {
+        var laydate = layui.laydate;
+        var $ = layui.jquery;
+        var layer = layui.layer
+
+        //页面加载后获取本地选择的数据
+        window.onload = function () {
+            var activityObj = JSON.parse(sessionStorage.getItem("selectedActivity"));
+            $('#aid').val(activityObj.aid);
+            $('#aname').val(activityObj.aname);
+            $('#atime').val(activityObj.atime);
+            $('#btime').val(activityObj.btime);
+            $('#etime').val(activityObj.etime);
+            $('#vquantity').val(activityObj.vquantity);
+            $('#apoint').val(activityObj.apoint);
+            $('#aintroduction').val(activityObj.aintroduction);
+        }
+
+
+
+        $("#update").click(function () {
+            var activity = {};
+            activity.aid = $('#aid').val();
+            activity.aname = $('#aname').val();
+            activity.atime = $('#atime').val();
+            activity.btime = $('#btime').val();
+            activity.etime = $('#etime').val();
+            activity.vquantity = $('#vquantity').val();
+            activity.apoint = $('#apoint').val();
+            layer.confirm("确定要更新数据？", function (confirmIndex) {
+                $.ajax({
+                    type: 'post',
+                    contentType: 'application/json',
+                    url: window.location.protocol + '//' + window.location.host + '/activityManager/saveOrUpdateActivity',
+                    data: JSON.stringify(activity),
+                    dataType: 'JSON',
+                    success: function (data) {
+                        if (data.code === 200) {
+                            parent.layer.alert(data.message, {icon: 1})
+                            var index = parent.layer.getFrameIndex(window.name);//获取弹出层索引
+                            parent.layer.close(index);//关闭弹出层
+                            window.parent.layui.tableReload();//提交成功调用上层表格重载方法
+                            sessionStorage.removeItem("selectedActivity")//删除选中的数据
+                        } else if (data.code === 206) {
+                            layer.close(confirmIndex);//关闭确认框
+                            layer.alert(data.message, {icon: 5});
+                            reload();//刷新页面
+                        }
+
+                    },
+                    error: function () {
+                        layer.msg("数据更新失败", {icon: 5})
+                    }
+                })
+            })
+        });
+        //限定可选时间
+        laydate.render({
+            elem: '#btime'
+            , type: 'datetime'
+            , max: '2080-1-1 00:00:00'
+            , btns: ['clear', 'now', 'confirm']
+        });
+
+        //限定可选时间
+        laydate.render({
+            elem: '#etime'
+            , type: 'datetime'
+            , min: $('#btime').val()
+            , max: '2080-1-1 17:30:00'
+            , btns: ['clear', 'now', 'confirm']
+        });
+
+
+    })
+    //页面刷新函数
+    function reload(){
+        window.location.href = "http://localhost:9001/updateActivityPage"
+    }
+</script>
+</html>

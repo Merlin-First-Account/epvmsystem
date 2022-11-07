@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Title</title>
+    <link rel="stylesheet" href="../layui/css/layui.css">
+    <script src="../layui/layui.js" tppabs="../layui/css/layui.css" media="all"></script>
+
+</head>
+<body>
+<div style="margin-left: 15%;width: 70%;height: 95%;margin-top:3%">
+    <form class="layui-form layui-form-pane">
+        <div class="layui-form-item">
+            <label class="layui-form-label">活动名称</label>
+            <div class="layui-input-block">
+                <input type="text" id="aname" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">开始时间</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" id="btime" lay-verify="required">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">结束时间</label>
+            <div class="layui-input-block">
+                <input type="text" class="layui-input" id="etime" lay-verify="required">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">招募人数</label>
+            <div class="layui-input-block">
+                <input type="text" id="vquantity" lay-verify="required" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">积分</label>
+            <div class="layui-input-block">
+                <input type="text" id="apoint" autocomplete="off" class="layui-input" lay-verify="required">
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">活动简介</label>
+            <div class="layui-input-block">
+                <textarea id="aintroduction" placeholder="请输入内容" class="layui-textarea" lay-verify="required"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <button class="layui-btn" id="update" style="margin-left: 130px" lay-submit lay-filter="yes">确认发布</button>
+        </div>
+    </form>
+
+</div>
+</body>
+<script>
+    layui.use(['element', 'layer','laydate','form'],function () {
+        var laydate = layui.laydate;
+        var $ = layui.jquery;
+        var layer = layui.layer;
+        var form = layui.form;
+
+        //获取当前登录用户信息
+        var userdata = JSON.parse(sessionStorage.getItem("adminInfo"));
+
+
+        $("#update").click(function () {
+            var activity = {};
+            activity.aname = $('#aname').val();
+            activity.btime = $('#btime').val();
+            activity.etime = $('#etime').val();
+            activity.vquantity = $('#vquantity').val();
+            activity.apoint = $('#apoint').val();
+            activity.aintroduction = $('#aintroduction').val();
+            activity.rid = userdata.rid;
+            layer.confirm("确定要发布此活动？", function (confirmIndex) {
+                $.ajax({
+                    type: 'post',
+                    contentType: 'application/json',
+                    url: window.location.protocol + '//' + window.location.host + '/activityManager/saveOrUpdateActivity',
+                    data: JSON.stringify(activity),
+                    dataType: 'JSON',
+                    success: function (data) {
+                        if (data.code === 200) {
+                            layer.close(confirmIndex);//关闭弹出层
+                            parent.layer.alert(data.message, {icon: 1});
+                            reload();
+                        } else if (data.code === 206) {
+                            layer.close(confirmIndex);
+                            layer.alert(data.message+",请检查:\t开始时间是否在结束时间之前\t积分和招募人数是否大于0", {icon: 5})
+                            // reload();
+                        }
+
+                    },
+                    error: function () {
+                        layer.msg("活动发布失败", {icon: 5})
+                    }
+                })
+            })
+        });
+
+
+        form.on('submit(yes)', function(data){
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+
+        //限定可选时间
+        laydate.render({
+            elem: '#btime'
+            , type: 'datetime'
+            , max: '2080-1-1 00:00:00'
+            , btns: ['clear', 'now', 'confirm']
+        });
+
+        //限定可选时间
+        laydate.render({
+            elem: '#etime'
+            , type: 'datetime'
+            , max: '2080-1-1 17:30:00'
+            , btns: ['clear', 'now', 'confirm']
+        });
+
+
+    })
+
+   function reload(){
+        window.location.href = "http://localhost:9001/activityAdd"
+    }
+
+</script>
+</html>

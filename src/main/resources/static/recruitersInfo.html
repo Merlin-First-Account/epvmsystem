@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+  <link rel="stylesheet" href="../layui/css/layui.css">
+  <script src="../layui/layui.js" tppabs="../layui/css/layui.css" media="all"></script>
+</head>
+<body>
+<div style="margin-left: 15%;width: 70%;height: 95%;margin-top:3%">
+  <form class="layui-form layui-form-pane" action="/">
+    <div class="layui-form-item">
+      <label class="layui-form-label">姓名</label>
+      <div class="layui-input-block">
+        <input type="text" id="rname" lay-verify="required"  autocomplete="off"
+               class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">招募者ID</label>
+      <div class="layui-input-block">
+        <input type="text" id="wid" lay-verify="required" autocomplete="off" class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">性别</label>
+      <div class="layui-input-block">
+        <select name="modules" id="sex" lay-verify="required">
+          <option value="">请选择</option>
+          <option value="0">男</option>
+          <option value="1">女</option>
+        </select>
+      </div>
+
+    </div>
+    <div class="layui-form-item">
+      <label class="layui-form-label">学院</label>
+      <div class="layui-input-block">
+        <select name="modules" id="department" lay-verify="required" lay-search="">
+          <option value="">直接选择或搜索选择</option>
+          <option value="智能制造学部">智能制造学部</option>
+          <option value="经济管理学院">经济管理学院</option>
+          <option value="政法学院">政法学院</option>
+          <option value="马克思主义学院">马克思主义学院</option>
+          <option value="文学院">文学院</option>
+          <option value="外国语学院">外国语学院</option>
+          <option value="数学与计算科学学院">数学与计算科学学院</option>
+          <option value="应用物理与材料学院">应用物理与材料学院</option>
+          <option value="土木建筑学院">土木建筑学院</option>
+          <option value="生物科技与大健康学院">生物科技与大健康学院</option>
+          <option value="纺织材料与工程学院">纺织材料与工程学院</option>
+          <option value="轨道交通学院">轨道交通学院</option>
+          <option value="艺术设计学院">艺术设计学院</option>
+          <option value="现代工业生产技术综合训练中心">现代工业生产技术综合训练中心</option>
+          <option value="通识教育学院">通识教育学院</option>
+          <option value="体育部">体育部</option>
+          <option value="研究生学院">研究生学院</option>
+          <option value="继续教育学院">继续教育学院</option>
+          <option value="美育教育中心">美育教育中心</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="layui-form-item">
+      <label class="layui-form-label">联系电话</label>
+      <div class="layui-input-block">
+        <input type="tel" id="phone" lay-verify="required|phone" autocomplete="off" class="layui-input">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <button class="layui-btn" id="update" style="margin-left: 380px" lay-submit lay-filter="yes">确认修改</button>
+    </div>
+  </form>
+
+</div>
+</body>
+<script>
+  //JS
+  layui.use(['form','jquery'], function(){
+    var form = layui.form;
+    var $ = layui.jquery;
+
+    var adminInfo = JSON.parse(sessionStorage.getItem("adminInfo"));
+
+    form.on('submit(yes)', function(data){
+      var params = {};
+      params.rname = $('#rname').val();
+      params.phone = $('#phone').val();
+      params.department = $('#department').val();
+      params.sex = $('#sex').val();
+      $.ajax({
+        type: 'put',
+        url: window.location.protocol + '//' + window.location.host + 'recruitersManager/updateRecruitersInfo?rid='+adminInfo.rid,
+        dataType: 'JSON',
+        data: JSON.stringify(params),
+        contentType: 'application/json',
+      })
+      return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    });
+
+  });
+
+
+
+
+</script>
+</html>

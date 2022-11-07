@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <script src="../js/jquery-3.4.1/jquery-3.4.1.min.js"></script>
+    <link rel="stylesheet" href="../layui/css/layui.css">
+    <link rel="stylesheet" href="../css/adminLogin.css">
+</head>
+<body>
+<div class="wrap">
+    <img src="../imgs/bg.7285dd88.jpg" class="imgStyle">
+    <div class="loginForm">
+        <form>
+            <div class="logoHead">
+                <h2 style="margin-top: 15px;margin-left: 20px">校园疫情志愿者系统</h2>
+            </div>
+            <div class="usernameWrapDiv">
+                <div class="usernameLabel">
+                    <label>用户名:</label>
+                </div>
+                <div class="usernameDiv">
+                    <i class="layui-icon layui-icon-username adminIcon"></i>
+                    <input id="loginUsername" class="layui-input adminInput" type="text" name="username"
+                           placeholder="输入用户名">
+                </div>
+            </div>
+            <div class="usernameWrapDiv">
+                <div class="usernameLabel">
+                    <label>密码:</label>
+                </div>
+                <div class="passwordDiv">
+                    <i class="layui-icon layui-icon-password adminIcon"></i>
+                    <input id="loginPassword" class="layui-input adminInput" type="password" name="password"
+                           placeholder="输入密码">
+                </div>
+            </div>
+            <div class="usernameWrapDiv">
+                <div class="usernameLabel">
+                    <label>验证码:</label>
+                </div>
+                <div class="cardDiv">
+                    <input id="loginCard" class="layui-input cardInput" type="text" name="card" placeholder="输入验证码">
+                    <input id="VerifyCode" type="hidden" value="">
+                </div>
+                <div class="codeDiv">
+                    <img id="loginCode" class="codeInput" onclick="refresh()" src="/system/getVerifyCode">
+                </div>
+            </div>
+            <div class="usernameWrapDiv">
+                <div class="usernameLabel">
+                    <label>角色:</label>
+                </div>
+                <div class="passwordDiv radioBox">
+                    <label>
+                        <input type="radio" value="0" name="role" checked>管理员
+                    </label>
+                    <label>
+                        <input type="radio" value="1" name="role">招募者
+                    </label>
+                    <label>
+                        <input type="radio" value="2" name="role">志愿者
+                    </label>
+                </div>
+            </div>
+            <div class="usernameWrapDiv">
+                <div class="submitLabel">
+                    <label></label>
+                </div>
+                <div class="submitDiv">
+                    <input id="loginBtn" onclick="login()" type="button" class="submit layui-btn layui-btn-primary"
+                           value="登录">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="/layui/layui.js" type="text/javascript"></script>
+<script>
+    layui.use(['layer', 'jquery'], function () {
+        var layer = layui.layer;
+    })
+
+    //本地登录
+    function tokenLogin(){
+        if (localStorage.getItem("token")!== null && localStorage.getItem("token")!== undefined) {
+            tokenCheck(localStorage.getItem("token"));
+        }
+    }
+
+    tokenLogin();
+
+    //刷新验证码
+    function refresh() {
+        //获得图片
+        var img = document.getElementById("loginCode");
+        //修改属性
+        img.setAttribute("src", "/system/getVerifyCode?" + new Date().getTime());
+    }
+
+
+    // 校验验证码、用户名、密码
+    function validateCode() {
+        var inputCode = $('#loginCard').val().toUpperCase();
+        var loginUsername = $('#loginUsername').val();
+        var loginPassword = $('#loginPassword').val();
+        if ($.trim(loginUsername) == '' || $.trim(loginUsername).length <= 0) {
+            layer.alert("用户名不能为空");
+            return false;
+        }
+        if ($.trim(loginPassword) == '' || $.trim(loginPassword).length <= 0) {
+            layer.alert("密码不能为空");
+            return false;
+        }
+        if ($.trim(inputCode) == '' || $.trim(inputCode).length <= 0) {
+            layer.alert("验证码不能为空");
+            return false;
+        }
+        return true;
+    }
+
+    // 登录流程
+    function login() {
+        if (!validateCode('#loginCard', '#loginCode')){
+            //阻断提示
+        } else{
+            var loginUsername = $('#loginUsername').val();
+            var loginPassword = $('#loginPassword').val();
+            var LoginForm = {};
+            LoginForm.loginUsername = loginUsername;
+            LoginForm.loginPassword = loginPassword;
+            LoginForm.authType = $("input[name='role']:checked").val();  //获取单选框的角色选择
+            LoginForm.verifyCode = $('#loginCard').val().toUpperCase();
+            var loginLoadIndex = layer.load(2);
+            $('#loginBtn').val("正在登录...");
+            $.ajax({
+                type: 'post',
+                url: window.location.protocol + '//' + window.location.host + '/system/login',
+                dataType: 'JSON',
+                data: JSON.stringify(LoginForm),
+                contentType: 'application/json',
+                timeout: 3000,
+                success: function (data) {
+                    layer.close(loginLoadIndex);
+                    if (data.code === 200) {
+                        var token = data.data.token;
+                        localStorage.setItem("token",token);
+                        tokenCheck(token);
+                    } else {
+                        layer.msg(data.message);
+                        $('#loginBtn').val("登录");
+                        refresh();
+                    }
+                    //
+
+                },
+                error: function () {
+                    layer.close(loginLoadIndex);
+                    layer.msg("登录失败");
+                    $('#loginBtn').val("登录");
+                }
+            });
+        }
+
+    }
+
+    //发送token并跳转
+    function tokenCheck(token) {
+        $.ajax({
+            type: 'get',
+            url: window.location.protocol + '//' + window.location.host + '/system/getInfo',
+            dataType: 'JSON',
+            headers: {
+                'token': token
+            },
+            success: function (data) {
+                //状态码是两百就跳转
+                if (data.code === 200){
+                    sessionStorage.setItem("adminInfo",JSON.stringify(data.data.user));//存之前转换成JSONString，不然无法解析
+                    if(data.data.userType ===0){
+                        window.location.href=window.location.protocol + '//' + window.location.host + '/admins';
+                    }else if (data.data.userType ===1){
+                        window.location.href=window.location.protocol + '//' + window.location.host + '/recruiters';
+                    }else {
+                        window.location.href=window.location.protocol + '//' + window.location.host + '/volunteers';
+                    }
+                }
+                //状态码是224就提示重新登录
+                if (data.code === 224){
+                    layer.msg("token过期，请重新登录");
+                    localStorage.clear();
+                    refresh();
+                }
+            },
+            error: function (){
+                layer.msg("服务器访问失败");
+            }
+        });
+    }
+</script>
+
+</body>
+
+</html>

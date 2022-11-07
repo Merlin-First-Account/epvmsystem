@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>layui 调试预览</title>
+    <link rel="stylesheet" href="../layui/css/layui.css">
+    <style>
+        .add {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="add">
+    <div class="demoTable">
+        搜索活动名：
+        <div class="layui-inline">
+            <input class="layui-input" name="id" id="demoReload" autocomplete="off">
+        </div>
+        <button class="layui-btn" data-type="reload" id="searchButton">搜索</button>
+    </div>
+</div>
+
+<table class="layui-hide" id="test" lay-filter="test"></table>
+
+
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="delete"><i class="layui-icon layui-icon-delete"></i>批量删除</button>
+    </div>
+</script>
+
+<script src="../layui/layui.js" charset="utf-8"></script>
+<!-- 注意：如果你直接复制所有代码到本地，上述 JS 路径需要改成你本地的 -->
+
+<!--//模板引擎状态更换数据状态-->
+<!--<script type="text/html" id="status">-->
+<!--    {{# if(d.vquantity === 3){ }}-->
+<!--    <span class="layui-badge layui-bg-green">正常</span>-->
+<!--    {{# } else { }}-->
+<!--    <span class="layui-badge">禁用</span>-->
+<!--    {{# } }}-->
+<!--</script>-->
+
+<script>
+    layui.use('table', function () {
+        var table = layui.table;
+        var $ = layui.jquery;
+        var layer = layui.layer;
+
+        //表格渲染
+        table.render({
+            elem: '#test'
+            , url: 'http://localhost:9001/activityManager/getActivityByOpr'
+            , toolbar: '#toolbarDemo' //开启头部工具栏，并为其绑定左侧模板
+            , defaultToolbar: ['filter', 'exports', 'print', { //自定义头部工具栏右侧图标。如无需自定义，去除该参数即可
+                title: '提示'
+                , layEvent: 'LAYTABLE_TIPS'
+                , icon: 'layui-icon-tips'
+            }]
+            , title: '用户数据表'
+            , cellMinWidth: 20
+            , cols: [
+                [
+                    {type: 'checkbox', fixed: 'left'}
+                    , {field: 'aid', title: 'ID',  fixed: 'left', unresize: true, sort: true, width: '7%'}
+                    , {field: 'aname', title: '活动名称', width: '13%'}
+                    , {field: 'btime', title: '开始时间', sort: true, width: '13%'}
+                    , {field: 'etime', title: '结束时间', sort: true, width: '13%'}
+                    , {field: 'vquantity', title: '招募人数',  width: '8%'}
+                    , {field: 'atime', title: '义工时',  width: '7%'}
+                    , {field: 'apoint', title: '积分',  width: '5%'}
+                    , {field: 'aintroduction', title: '活动简介', width: '21%'}
+                    , {fixed: 'right', align: 'center', toolbar: '#barDemo', width: '10%'}
+                ]]
+            , limit: 5
+            , limits: [5, 10]
+            , page: true
+            , parseData: function (res) {
+                return {
+                    "code": res.code,
+                    "data": res.data.records,//从返回的数据里面取数据
+                    "count": res.data.total,
+                    "msg": res.message
+                }
+            }, response: {
+                statusCode: 200 //规定成功的状态码，默认：0
+            }, request: {
+                pageName: 'pageNo' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+        });
+
+        //搜索功能实现
+        $("#searchButton").click(function () {
+            var test = $('#demoReload').val();
+            //搜索功能表格重载
+            table.reload('test', {
+                url: 'http://localhost:9001/activityManager/getActivityByOpr'
+                , where: {//设定异步数据接口的额外参数 模糊搜索活动名
+                    activityName: test
+                }
+            });
+        });
+
+
+        //表格右侧行工具事件
+        table.on('tool(test)', function (obj) {
+            var data = obj.data;
+            //console.log(obj)
+            if (obj.event === 'del') {
+                console.log(obj);
+                layer.confirm('真的删除行么', function (index) {
+                    var aid = [];
+                    aid[0] = data.aid;
+                    if(deleteActivity(aid) === 1){
+                        obj.del();
+                    }
+                    layer.close(index);
+                });
+            } else if (obj.event === 'edit') {
+                sessionStorage.setItem("selectedActivity",JSON.stringify(obj.data));//将选择的活动数据放到本地
+                //多窗口模式，层叠置顶
+                layer.open({
+                    type: 2 //此处以iframe举例
+                    ,title: '修改活动 '+obj.data.aname+' 的详细信息'
+                    ,area: ['700px', '600px']
+                    ,shade: 0
+                    ,maxmin: true
+                    ,scrollbar: false
+                    ,content: 'http://localhost:9001/updateActivityPage'
+                    ,zIndex: layer.zIndex //重点1
+                    ,success: function(layero, index){
+                        layer.setTop(layero); //重点2. 保持选中窗口置顶
+                        //记录索引，以便按 esc 键关闭。事件见代码最末尾处。
+                        layer.escIndex = layer.escIndex || [];
+                        layer.escIndex.unshift(index);
+                        //选中当前层时，将当前层索引放置在首位
+                        layero.on('mousedown', function(){
+                            var _index = layer.escIndex.indexOf(index);
+                            if(_index !== -1){
+                                layer.escIndex.splice(_index, 1); //删除原有索引
+                            }
+                            layer.escIndex.unshift(index); //将索引插入到数组首位
+                        });
+                    }
+
+                });
+            }
+        });
+
+        //左上工具条触发事件
+        table.on('toolbar(test)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch (obj.event) {
+                case 'add':
+                    layer.msg('添加');
+                    break;
+                case 'delete':
+                    console.log(checkStatus);
+                    layer.confirm('确认删除选中数据?', function (index) {
+                        var checkStatus1 = table.checkStatus('test'),
+                            data = checkStatus1.data,
+                            userId = [];
+                        if (data.length > 0) {
+                            for (var i in data) {
+                                userId[i] = data[i].aid;
+                            }
+                        }
+                        deleteActivity(userId);//请求后台删除数据
+                        layui.tableReload();//删除完成之后表格重载
+                        layer.close(index);//关闭弹出框
+                    });
+                    break;
+                case 'update':
+                    layer.msg('编辑');
+                    break;
+            }
+        });
+
+        //定义一个删除功能
+        window.deleteActivity = function (params) {
+            $.ajax({
+                type: 'delete',
+                url: window.location.protocol + '//' + window.location.host + '/activityManager/deleteActivityByAid',
+                dataType: 'JSON',
+                data: JSON.stringify(params),
+                contentType: 'application/json',
+                timeout: 3000,
+                success: function (data) {
+                    layer.msg("删除"+data.message, {icon: 1});
+                    return 1;
+                },
+                error: function () {
+                    layer.msg("删除失败")
+                    return 0;
+                }
+            });
+        }
+
+        //表格重载功能
+        layui.tableReload = function (){
+            //搜索功能表格重载
+            table.reload('test', {
+                url: 'http://localhost:9001/activityManager/getActivityByOpr'
+            });
+        }
+    });
+
+
+
+</script>
+
+</body>
+</html>
