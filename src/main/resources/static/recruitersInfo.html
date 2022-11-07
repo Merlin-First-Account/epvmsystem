@@ -19,7 +19,7 @@
     <div class="layui-form-item">
       <label class="layui-form-label">招募者ID</label>
       <div class="layui-input-block">
-        <input type="text" id="wid" lay-verify="required" autocomplete="off" class="layui-input">
+        <input type="text" id="wid" lay-verify="required" disabled="disabled" autocomplete="off" class="layui-input">
       </div>
     </div>
     <div class="layui-form-item">
@@ -27,8 +27,8 @@
       <div class="layui-input-block">
         <select name="modules" id="sex" lay-verify="required">
           <option value="">请选择</option>
-          <option value="0">男</option>
-          <option value="1">女</option>
+          <option value="1">男</option>
+          <option value="0">女</option>
         </select>
       </div>
 
@@ -76,24 +76,89 @@
 </body>
 <script>
   //JS
-  layui.use(['form','jquery'], function(){
+  layui.use(['form','jquery','layer'], function(){
     var form = layui.form;
     var $ = layui.jquery;
+    var layer = layui.layer;
 
+    //当前用户信息
     var adminInfo = JSON.parse(sessionStorage.getItem("adminInfo"));
+    var token = localStorage.getItem("token",token);
 
-    form.on('submit(yes)', function(data){
-      var params = {};
-      params.rname = $('#rname').val();
-      params.phone = $('#phone').val();
-      params.department = $('#department').val();
-      params.sex = $('#sex').val();
+    //请求将当前用户信息反应到表单上
+    $(document).ready(function(){
+      //检查登录状态
+      if(token === null|| token === undefined || token === ""){
+        return;
+      }
+      //用token请求用户信息
       $.ajax({
-        type: 'put',
-        url: window.location.protocol + '//' + window.location.host + 'recruitersManager/updateRecruitersInfo?rid='+adminInfo.rid,
+        type: 'get',
+        url: window.location.protocol + '//' + window.location.host + '/system/getInfo',
         dataType: 'JSON',
-        data: JSON.stringify(params),
+        headers: {
+          'token': token
+        },
+        success: function (data) {
+          //状态码是两百就显示信息
+          if (data.code === 200){
+            //更新本地用户信息
+            adminInfo = data.data.user;
+            sessionStorage.setItem("adminInfo",JSON.stringify(adminInfo));
+            //将用户信息放到表格上面
+            $('#rname').val(adminInfo.rname);
+            $('#wid').val(adminInfo.wid);
+            // 设置对应性别值选中 模拟点击事件
+            var selectSex = 'dd[lay-value="'+adminInfo.sex+'"]';
+            $('#sex').siblings("div.layui-form-select").find('dl').find(selectSex).click();
+            var selectDep = 'dd[lay-value="'+adminInfo.department+'"]';
+            // 设置对应院系值选中 模拟点击事件
+            $('#department').siblings("div.layui-form-select").find('dl').find(selectDep).click();
+            $('#phone').val(adminInfo.phone);
+            }
+
+          //状态码是224就提示重新登录
+          if (data.code === 224){
+            layer.msg("token过期，请重新登录");
+            localStorage.clear();
+            refresh();
+          }
+        },
+        error: function (){
+          layer.msg("服务器访问失败");
+        }
+      });
+
+    });
+
+    //按下表单的提交按键后的时间，return false就是不允许跳转
+    form.on('submit(yes)', function(data){
+      adminInfo.rname = $('#rname').val();
+      adminInfo.phone = $('#phone').val();
+      adminInfo.department = $('#department').val();
+      adminInfo.sex = $('#sex').val();
+      $.ajax({
+        type: 'PUT',
+        url: 'http://localhost:9001/recruitersManager/updateRecruitersInfo/',
+        dataType: 'JSON',
+        data: JSON.stringify(adminInfo),
         contentType: 'application/json',
+        success:function (data) {
+          //请求成功
+          if (data.code === 200){
+            //刷新页面
+            parent.document.getElementById('userName').innerHTML=adminInfo.rname;
+            window.location.href='http://localhost:9001/recruitersInfo';
+            parent.layui.layer.alert("数据更新成功",{icon:1});
+          }
+          //参数校验错误
+          if(data.code === 206){
+            layer.alert(data.msg,{icon:1});
+          }
+        },
+        error:function (){
+          layer.alert("修改失败",{icon:5});
+        }
       })
       return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
     });

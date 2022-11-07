@@ -13,4 +13,6 @@ public interface RecruitersService extends IService<Recruiters> {
     Recruiters login(LoginForm loginForm);
 
     Recruiters getRecruitersById(Long userId);
+
+    boolean updateRecruitersInfo(Recruiters recruiters);
 }
