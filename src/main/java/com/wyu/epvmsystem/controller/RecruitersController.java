@@ -2,12 +2,14 @@ package com.wyu.epvmsystem.controller;
 
 import com.wyu.epvmsystem.pojo.Recruiters;
 import com.wyu.epvmsystem.service.RecruitersService;
+import com.wyu.epvmsystem.util.MD5;
 import com.wyu.epvmsystem.util.Result;
 import com.wyu.epvmsystem.util.ResultCodeEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.websocket.server.PathParam;
+import java.util.Map;
 
 /**
  * @author afglow
@@ -71,5 +73,26 @@ public class RecruitersController {
             return Result.ok();
         }
         return Result.fail();
+    }
+
+
+    //此方法是招募者更新登陆密码
+    @PutMapping("/updatePasswordRecruiters/{rid}")
+    public Result updatePasswordRecruiters(@PathVariable Integer rid,@RequestBody Map<String,String> passwordObj){
+        //校验密码
+        String oldPassword = passwordObj.get("old");
+        Recruiters recruiters= recruitersService.getRecruitersById((long) rid);
+        //原密码不正确
+        if(!recruiters.getRPassword().equals(MD5.encrypt(oldPassword))){
+            Result.build(null,ResultCodeEnum.LOGIN_ERROR);
+        }
+        //新密码验证不一致
+        if(!passwordObj.get("new").equals("confirm")){
+            Result.build(null,ResultCodeEnum.ARGUMENT_VALID_ERROR);
+        }
+        //没问题就更新数据
+        recruiters.setRPassword(MD5.encrypt(passwordObj.get("new")));
+        recruitersService.updateById(recruiters);
+        return Result.ok();
     }
 }
