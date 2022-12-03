@@ -86,9 +86,9 @@
                                               class="site-demo-active"
                                               data-type="tabAdd">修改个人信息</a></li>
                 <li class="layui-nav-item"><a href="javascript:;"
-                                              data-url="/activityDeleteRecruiters"
+                                              data-url="/updatePasswordRecruiters"
                                               data-id="a-updatePassword"
-                                              data-title="<i>修改个人信息</i>"
+                                              data-title="<i>修改登录密码</i>"
                                               class="site-demo-active"
                                               data-type="tabAdd">修改登录密码</a></li>
             </ul>
@@ -122,8 +122,6 @@
     //JS
     layui.use(['element', 'layer', 'util'], function(){
         var element = layui.element
-            ,layer = layui.layer
-            ,util = layui.util
             ,$ = layui.$;
 
         //检测登录状态并设置右上用户名

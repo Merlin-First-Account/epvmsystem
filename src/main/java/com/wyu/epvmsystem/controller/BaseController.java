@@ -51,5 +51,9 @@ public class BaseController {
     public String recruitersInfo(){
         return "recruitersInfo";
     }
+    @GetMapping("/updatePasswordRecruiters")
+    public String updatePasswordRecruiters(){
+        return "updatePasswordRecruiters";
+    }
 
 }

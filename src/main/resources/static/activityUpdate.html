@@ -87,7 +87,7 @@
 
 
 
-        $("#update").click(function () {
+        $("#update").click(function ()  {
             var activity = {};
             activity.aid = $('#aid').val();
             activity.aname = $('#aname').val();
@@ -123,6 +123,7 @@
                 })
             })
         });
+
         //限定可选时间
         laydate.render({
             elem: '#btime'

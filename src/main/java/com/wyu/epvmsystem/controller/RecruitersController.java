@@ -18,7 +18,6 @@ public class RecruitersController {
     @PutMapping("/updateRecruitersInfo")
     public Result updateRecruitersInfo(@PathParam("rid")Integer rid){
         System.out.println(rid);
-        System.out.println(rid);
         return Result.ok();
     }
 }
